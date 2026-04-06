@@ -589,27 +589,42 @@
             t += d * 0.7;
           }
 
-          // Soft clamp — prevents harsh spikes but keeps the glow alive
           glow = min(glow, 20.0);
 
-          // Smooth color shift per section
           float hueShift = uScroll * 0.3;
-          vec3 c1 = vec3(0.0, 0.9, 1.0);   // cyan
-          vec3 c2 = vec3(0.5, 0.2, 0.9);   // purple
-          vec3 c3 = vec3(0.95, 0.3, 0.6);  // pink
+          vec3 c1 = vec3(0.0, 0.9, 1.0);
+          vec3 c2 = vec3(0.5, 0.2, 0.9);
+          vec3 c3 = vec3(0.95, 0.3, 0.6);
           vec3 ca = mix(c1, c2, 0.5 + 0.5 * sin(hueShift));
           vec3 cb = mix(c2, c3, 0.5 + 0.5 * cos(hueShift * 1.3));
 
+          // Fractal glow
           vec3 col = vec3(0.0);
           col += ca * glow * 0.07;
           col += cb * glow * 0.035;
           col += c3 * glow * glow * 0.004;
 
-          // Soft tone-mapping instead of hard clamp — keeps colors rich
+          // ═══ PERMANENT NEBULA — always visible, never black ═══
+          // Layered noise-like patterns using sin waves
+          float nebT = uTime * 0.06;
+          vec2 nUv = uv * 1.5;
+          float n1 = sin(nUv.x * 3.0 + nebT) * cos(nUv.y * 2.5 - nebT * 0.7);
+          float n2 = sin(nUv.x * 1.8 - nebT * 1.3 + nUv.y * 2.0) * cos(nUv.y * 3.2 + nebT * 0.5);
+          float n3 = sin((nUv.x + nUv.y) * 2.0 + nebT * 0.9) * 0.5 + 0.5;
+          float nebula = (n1 * 0.3 + n2 * 0.3 + n3 * 0.4) * 0.5 + 0.5;
+          nebula = smoothstep(0.1, 0.9, nebula);
+
+          // Nebula color shifts with scroll
+          vec3 nebCol = mix(ca * 0.12, cb * 0.10, nebula);
+          nebCol += c3 * nebula * 0.04;
+
+          // Combine: fractal on top, nebula as permanent base
+          col = max(col, nebCol);
+
+          // Tone-map
           col = col / (1.0 + col);
 
-          // Always fully visible
-          gl_FragColor = vec4(col, max(length(col), 0.01));
+          gl_FragColor = vec4(col, max(length(col), 0.05));
         }
       `
     });
