@@ -5,372 +5,308 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Medical Research — AI × Biochemistry</title>
   <meta name="description" content="AI-driven biochemical discovery. Where molecules meet machine learning.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <style>
     :root {
-      --bg: #030712;
-      --surface: rgba(255,255,255,0.03);
-      --glass: rgba(255,255,255,0.04);
-      --glass-border: rgba(255,255,255,0.06);
+      --bg: #020408;
+      --glass: rgba(255,255,255,0.025);
+      --glass-border: rgba(255,255,255,0.05);
       --accent: #00e5ff;
       --accent2: #7c3aed;
       --accent3: #f472b6;
-      --neon-green: #39ff14;
-      --text: #f0f4f8;
-      --text-dim: #8892a4;
-      --text-muted: #4a5568;
+      --neon: #39ff14;
+      --text: #eef2f7;
+      --dim: #8892a4;
+      --muted: #4a5568;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Outfit', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-      line-height: 1.6;
+      font-family: 'Outfit', sans-serif; background: var(--bg);
+      color: var(--text); overflow-x: hidden; line-height: 1.6;
     }
     ::selection { background: rgba(0,229,255,0.3); }
 
-    /* ═══ CANVAS BACKGROUND ═══ */
-    #bg-canvas {
+    /* ═══ WEBGL CANVAS ═══ */
+    #scene-container {
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
     }
-
-    /* ═══ SCANLINES ═══ */
-    .scanlines {
+    /* Scanline overlay */
+    .scan {
       position: fixed; inset: 0; z-index: 1; pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg, transparent, transparent 2px,
-        rgba(0,229,255,0.008) 2px, rgba(0,229,255,0.008) 4px
-      );
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,229,255,0.006) 3px, rgba(0,229,255,0.006) 6px);
     }
-
     .page { position: relative; z-index: 2; }
     .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
     /* ═══ NAV ═══ */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(3,7,18,0.6); backdrop-filter: blur(30px) saturate(1.5);
-      border-bottom: 1px solid rgba(0,229,255,0.08);
+      background: rgba(2,4,8,0.7); backdrop-filter: blur(40px) saturate(1.8);
+      border-bottom: 1px solid rgba(0,229,255,0.06);
     }
-    nav .container {
-      display: flex; justify-content: space-between; align-items: center;
-      height: 64px;
-    }
-    .nav-brand {
-      font-weight: 800; font-size: 1rem; letter-spacing: 1px;
-      display: flex; align-items: center; gap: 12px;
-    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; height: 60px; }
+    .nav-brand { font-weight: 800; font-size: 0.9rem; letter-spacing: 2px; display: flex; align-items: center; gap: 12px; text-transform: uppercase; }
     .nav-logo {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; box-shadow: 0 0 20px rgba(0,229,255,0.3);
+      width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle, rgba(0,229,255,0.2), transparent);
+      border: 1px solid rgba(0,229,255,0.3);
+      box-shadow: 0 0 20px rgba(0,229,255,0.15); font-size: 0.9rem;
     }
-    .nav-links { display: flex; gap: 8px; }
+    .nav-links { display: flex; gap: 6px; }
     .nav-links a {
-      color: var(--text-muted); text-decoration: none; font-size: 0.82rem;
+      color: var(--muted); text-decoration: none; font-size: 0.75rem;
       font-weight: 500; padding: 6px 14px; border-radius: 8px; transition: all 0.3s;
-      letter-spacing: 0.5px; text-transform: uppercase;
+      letter-spacing: 1.5px; text-transform: uppercase;
     }
-    .nav-links a:hover { color: var(--accent); background: rgba(0,229,255,0.05); }
+    .nav-links a:hover { color: var(--accent); background: rgba(0,229,255,0.04); }
 
     /* ═══ HERO ═══ */
-    .hero {
-      min-height: 100vh; display: flex; align-items: center;
-      position: relative; overflow: hidden;
-    }
-    .hero-content { position: relative; z-index: 2; max-width: 750px; }
+    .hero { min-height: 100vh; display: flex; align-items: center; position: relative; }
+    .hero-inner { max-width: 700px; }
     .hero-tag {
       display: inline-flex; align-items: center; gap: 8px;
-      font-size: 0.72rem; font-weight: 600; letter-spacing: 3px; text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 4px; text-transform: uppercase;
       color: var(--accent); margin-bottom: 32px;
       padding: 8px 20px; border-radius: 100px;
-      border: 1px solid rgba(0,229,255,0.15);
-      background: rgba(0,229,255,0.04);
+      border: 1px solid rgba(0,229,255,0.12); background: rgba(0,229,255,0.03);
     }
-    .hero-tag .pulse-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--neon-green);
-      box-shadow: 0 0 8px var(--neon-green);
-      animation: pulse-glow 2s ease-in-out infinite;
+    .pulse-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--neon);
+      box-shadow: 0 0 10px var(--neon); animation: pulsed 2s ease-in-out infinite;
     }
-    @keyframes pulse-glow {
-      0%,100% { box-shadow: 0 0 8px var(--neon-green); }
-      50% { box-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(57,255,20,0.3); }
-    }
+    @keyframes pulsed { 0%,100%{box-shadow:0 0 8px var(--neon)}50%{box-shadow:0 0 24px var(--neon),0 0 48px rgba(57,255,20,0.2)} }
     .hero h1 {
-      font-size: clamp(3rem, 7vw, 5.5rem);
-      font-weight: 900; line-height: 1.0; margin-bottom: 28px;
-      letter-spacing: -2px;
+      font-size: clamp(3rem, 7vw, 6rem); font-weight: 900;
+      line-height: 0.95; margin-bottom: 28px; letter-spacing: -3px;
     }
-    .hero h1 .line1 { color: var(--text); }
-    .hero h1 .line2 {
-      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
-      background-size: 200% auto;
+    .hero h1 .l1 { display: block; }
+    .hero h1 .l2 {
+      display: block;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+      background-size: 300% auto;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      animation: gradient-shift 4s linear infinite;
+      animation: shimmer 6s linear infinite;
     }
-    @keyframes gradient-shift {
-      0% { background-position: 0% center; }
-      100% { background-position: 200% center; }
+    @keyframes shimmer { 0%{background-position:0% center}100%{background-position:300% center} }
+    .hero p { font-size: 1.1rem; color: var(--dim); max-width: 560px; margin-bottom: 40px; font-weight: 300; line-height: 1.8; }
+    .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn {
+      padding: 13px 30px; border-radius: 12px; font-weight: 600; font-size: 0.88rem;
+      text-decoration: none; transition: all 0.4s; border: none; cursor: pointer;
+      font-family: 'Outfit', sans-serif; letter-spacing: 0.5px;
     }
-    .hero p {
-      font-size: 1.15rem; color: var(--text-dim); max-width: 580px;
-      margin-bottom: 40px; line-height: 1.8; font-weight: 300;
+    .btn-primary {
+      background: rgba(0,229,255,0.08); color: var(--accent);
+      border: 1px solid rgba(0,229,255,0.25);
     }
-    .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
-    .btn-glow {
-      position: relative; padding: 14px 32px; border-radius: 14px;
-      font-weight: 600; font-size: 0.92rem; text-decoration: none;
-      overflow: hidden; transition: all 0.4s; border: none; cursor: pointer;
-      font-family: 'Outfit', sans-serif;
+    .btn-primary:hover {
+      background: rgba(0,229,255,0.12); border-color: var(--accent);
+      box-shadow: 0 0 40px rgba(0,229,255,0.15); transform: translateY(-2px);
     }
-    .btn-glow.primary {
-      background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,58,237,0.15));
-      color: var(--accent); border: 1px solid rgba(0,229,255,0.3);
-    }
-    .btn-glow.primary:hover {
-      box-shadow: 0 0 40px rgba(0,229,255,0.2), inset 0 0 40px rgba(0,229,255,0.05);
-      border-color: var(--accent); transform: translateY(-2px);
-    }
-    .btn-glow.ghost {
-      background: transparent; color: var(--text-dim);
-      border: 1px solid var(--glass-border);
-    }
-    .btn-glow.ghost:hover { border-color: rgba(0,229,255,0.2); color: var(--accent); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--glass-border); }
+    .btn-ghost:hover { border-color: rgba(0,229,255,0.15); color: var(--dim); }
 
-    /* ═══ DNA HELIX VISUAL ═══ */
-    .dna-visual {
-      position: absolute; right: -40px; top: 50%; transform: translateY(-50%);
-      width: 500px; height: 700px; opacity: 0.5;
+    /* Terminal */
+    .terminal {
+      margin-top: 48px; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,229,255,0.06);
+      border-radius: 14px; padding: 20px 24px; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--dim); line-height: 2.2;
+      backdrop-filter: blur(10px);
     }
+    .terminal .pr { color: var(--accent); }
+    .terminal .cm { color: var(--muted); }
+    .terminal .vl { color: var(--neon); }
+    .terminal .tp { color: var(--accent3); }
 
     /* ═══ SECTIONS ═══ */
-    section { padding: 120px 0; }
-    .sec-tag {
+    section { padding: 140px 0; }
+    .stag {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem; font-weight: 600; letter-spacing: 4px; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 16px;
-      display: flex; align-items: center; gap: 12px;
+      font-size: 0.65rem; font-weight: 600; letter-spacing: 5px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 16px;
     }
-    .sec-tag::before {
-      content: ''; width: 40px; height: 1px; background: var(--accent);
+    .stag::before { content:''; width: 50px; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .stitle { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 800; letter-spacing: -1.5px; margin-bottom: 16px; }
+    .sdesc { font-size: 1rem; color: var(--dim); max-width: 580px; margin-bottom: 64px; font-weight: 300; }
+
+    /* ═══ RESEARCH — FLOATING NODES ═══ */
+    .node-field {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+      position: relative; min-height: 700px;
     }
-    .sec-title {
-      font-size: clamp(2rem, 4vw, 3rem); font-weight: 800;
-      letter-spacing: -1px; margin-bottom: 16px;
+    .node-cell {
+      position: relative; padding: 48px 32px;
+      border: 1px solid rgba(0,229,255,0.03);
+      transition: all 0.6s;
+      overflow: hidden;
     }
-    .sec-desc {
-      font-size: 1.05rem; color: var(--text-dim); max-width: 600px;
-      margin-bottom: 56px; font-weight: 300;
+    .node-cell::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at var(--gx,50%) var(--gy,50%), rgba(0,229,255,0.04), transparent 70%);
+      opacity: 0; transition: opacity 0.6s; pointer-events: none;
+    }
+    .node-cell:hover::before { opacity: 1; }
+    .node-cell:hover { border-color: rgba(0,229,255,0.08); }
+    .node-idx {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(124,58,237,0.05));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+    .node-cell h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; }
+    .node-cell p { font-size: 0.85rem; color: var(--dim); font-weight: 300; line-height: 1.7; }
+    .node-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 18px; }
+    .ntag {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+      padding: 3px 10px; border-radius: 4px; letter-spacing: 0.5px;
+      background: rgba(0,229,255,0.04); color: rgba(0,229,255,0.7);
+      border: 1px solid rgba(0,229,255,0.08);
+    }
+    /* Connection lines between nodes */
+    .node-field::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background:
+        linear-gradient(90deg, transparent 33.3%, rgba(0,229,255,0.04) 33.3%, rgba(0,229,255,0.04) 33.4%, transparent 33.4%,
+                        transparent 66.6%, rgba(0,229,255,0.04) 66.6%, rgba(0,229,255,0.04) 66.7%, transparent 66.7%),
+        linear-gradient(180deg, transparent 50%, rgba(0,229,255,0.04) 50%, rgba(0,229,255,0.04) 50.2%, transparent 50.2%);
     }
 
-    /* ═══ RESEARCH CARDS ═══ */
-    .hex-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;
+    /* ═══ PIPELINE — HELIX TIMELINE ═══ */
+    .helix-pipe { position: relative; padding-left: 80px; }
+    .helix-pipe::before {
+      content: ''; position: absolute; left: 30px; top: 0; bottom: 0; width: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--accent2), var(--accent3), transparent);
+      opacity: 0.2;
     }
-    .hex-card {
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 20px; padding: 36px;
-      position: relative; overflow: hidden; transition: all 0.5s;
+    .hp-step { position: relative; padding: 32px 0; }
+    .hp-step::before {
+      content: ''; position: absolute; left: -56px; top: 42px;
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--accent); background: var(--bg);
+      box-shadow: 0 0 12px rgba(0,229,255,0.3);
     }
-    .hex-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-      opacity: 0; transition: opacity 0.5s;
+    .hp-step::after {
+      content: ''; position: absolute; left: -49px; top: 49px;
+      width: 42px; height: 1px;
+      background: linear-gradient(90deg, rgba(0,229,255,0.3), transparent);
     }
-    .hex-card:hover::before { opacity: 1; }
-    .hex-card:hover {
-      border-color: rgba(0,229,255,0.15);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 60px rgba(0,229,255,0.03);
-      transform: translateY(-4px);
+    .hp-idx {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+      color: var(--accent); letter-spacing: 4px; margin-bottom: 8px; opacity: 0.6;
     }
-    .hex-card .card-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; font-weight: 600; color: var(--accent);
-      letter-spacing: 3px; margin-bottom: 16px; opacity: 0.6;
-    }
-    .hex-card .card-icon {
-      font-size: 2.2rem; margin-bottom: 16px;
-      filter: drop-shadow(0 0 12px rgba(0,229,255,0.3));
-    }
-    .hex-card h3 {
-      font-size: 1.15rem; font-weight: 700; margin-bottom: 12px;
-    }
-    .hex-card p {
-      font-size: 0.88rem; color: var(--text-dim); line-height: 1.7; font-weight: 300;
-    }
-    .hex-card .card-tags {
-      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px;
-    }
-    .card-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; padding: 4px 12px; border-radius: 6px;
-      background: rgba(0,229,255,0.05); color: var(--accent);
-      border: 1px solid rgba(0,229,255,0.1); font-weight: 500;
-    }
+    .hp-step h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .hp-step p { font-size: 0.85rem; color: var(--dim); font-weight: 300; max-width: 550px; }
 
-    /* ═══ PIPELINE ═══ */
-    .pipeline {
-      display: flex; flex-direction: column; gap: 0; position: relative;
-      padding-left: 40px;
+    /* ═══ TECH — CONSTELLATION ═══ */
+    .constellation {
+      position: relative; min-height: 500px;
+      display: flex; align-items: center; justify-content: center;
     }
-    .pipeline::before {
-      content: ''; position: absolute; left: 15px; top: 20px; bottom: 20px;
-      width: 2px;
-      background: linear-gradient(180deg, var(--accent), var(--accent2), var(--accent3));
-      opacity: 0.3;
+    .const-canvas { position: absolute; inset: 0; }
+    .const-nodes {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+      position: relative; z-index: 1; width: 100%;
     }
-    .pipe-step {
-      position: relative; padding: 28px 0 28px 40px;
+    .c-node {
+      text-align: center; padding: 32px 16px; border-radius: 20px;
+      background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      transition: all 0.5s; cursor: default; position: relative;
     }
-    .pipe-step::before {
-      content: ''; position: absolute; left: -32px; top: 36px;
-      width: 12px; height: 12px; border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 16px rgba(0,229,255,0.4);
+    .c-node::before {
+      content: ''; position: absolute; inset: -1px; border-radius: 20px;
+      background: linear-gradient(135deg, rgba(0,229,255,0.1), rgba(124,58,237,0.1));
+      opacity: 0; transition: opacity 0.5s; z-index: -1;
     }
-    .pipe-step .step-idx {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem; color: var(--accent); letter-spacing: 3px;
-      margin-bottom: 8px; opacity: 0.7;
+    .c-node:hover::before { opacity: 1; }
+    .c-node:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(0,229,255,0.05);
     }
-    .pipe-step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
-    .pipe-step p { font-size: 0.88rem; color: var(--text-dim); font-weight: 300; max-width: 600px; }
-
-    /* ═══ TECH ORBS ═══ */
-    .orb-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px;
+    .c-node .c-ico {
+      font-size: 2.4rem; margin-bottom: 12px;
+      filter: drop-shadow(0 0 16px rgba(0,229,255,0.3));
     }
-    .orb {
-      text-align: center; padding: 28px 16px; border-radius: 20px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      transition: all 0.4s; cursor: default;
-    }
-    .orb:hover {
-      border-color: rgba(0,229,255,0.2);
-      box-shadow: 0 0 40px rgba(0,229,255,0.05);
-      transform: scale(1.05);
-    }
-    .orb .orb-icon {
-      font-size: 2.5rem; margin-bottom: 12px;
-      filter: drop-shadow(0 0 8px rgba(0,229,255,0.2));
-    }
-    .orb h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
-    .orb p { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; }
+    .c-node h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+    .c-node p { font-size: 0.7rem; color: var(--muted); }
 
     /* ═══ PUBLICATIONS ═══ */
-    .pub-stack { display: flex; flex-direction: column; gap: 16px; }
-    .pub-row {
+    .pub-flow { display: flex; flex-direction: column; gap: 12px; }
+    .pub-card {
       display: flex; align-items: flex-start; gap: 20px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 16px; padding: 24px 28px;
+      background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
+      border-radius: 14px; padding: 24px 28px; backdrop-filter: blur(8px);
       transition: all 0.4s;
     }
-    .pub-row:hover { border-color: rgba(0,229,255,0.15); }
+    .pub-card:hover { border-color: rgba(0,229,255,0.12); transform: translateX(4px); }
     .pub-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.62rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-      padding: 5px 14px; border-radius: 6px; white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.58rem; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 14px; border-radius: 6px; white-space: nowrap;
     }
-    .pub-badge.active {
-      background: rgba(0,229,255,0.08); color: var(--accent);
-      border: 1px solid rgba(0,229,255,0.15);
-    }
-    .pub-badge.planned {
-      background: rgba(124,58,237,0.08); color: var(--accent2);
-      border: 1px solid rgba(124,58,237,0.15);
-    }
-    .pub-row h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
-    .pub-row p { font-size: 0.82rem; color: var(--text-dim); font-weight: 300; line-height: 1.6; }
+    .pub-badge.live { background: rgba(0,229,255,0.06); color: var(--accent); border: 1px solid rgba(0,229,255,0.12); }
+    .pub-badge.soon { background: rgba(124,58,237,0.06); color: var(--accent2); border: 1px solid rgba(124,58,237,0.12); }
+    .pub-card h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+    .pub-card p { font-size: 0.8rem; color: var(--dim); font-weight: 300; line-height: 1.6; }
 
     /* ═══ CTA ═══ */
-    .cta-wrap {
-      position: relative; border-radius: 28px; overflow: hidden;
-      background: linear-gradient(135deg, rgba(0,229,255,0.04), rgba(124,58,237,0.04));
+    .cta-box {
+      position: relative; border-radius: 28px; overflow: hidden; text-align: center;
+      padding: 80px 48px;
+      background: radial-gradient(ellipse at center, rgba(0,229,255,0.03), transparent 60%);
       border: 1px solid var(--glass-border);
-      padding: 80px 48px; text-align: center;
     }
-    .cta-wrap::before {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at center, rgba(0,229,255,0.06), transparent 70%);
-    }
-    .cta-wrap > * { position: relative; z-index: 1; }
-    .cta-wrap h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 16px; letter-spacing: -1px; }
-    .cta-wrap p { color: var(--text-dim); max-width: 500px; margin: 0 auto 32px; font-weight: 300; }
+    .cta-box h2 { font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 16px; }
+    .cta-box p { color: var(--dim); max-width: 500px; margin: 0 auto 32px; font-weight: 300; }
 
     /* ═══ FOOTER ═══ */
-    footer {
-      border-top: 1px solid var(--glass-border); padding: 32px 0;
-      text-align: center; font-size: 0.8rem; color: var(--text-muted);
-    }
+    footer { border-top: 1px solid var(--glass-border); padding: 32px 0; text-align: center; font-size: 0.78rem; color: var(--muted); }
     footer a { color: var(--accent); text-decoration: none; }
 
-    /* ═══ TERMINAL BLOCK ═══ */
-    .terminal {
-      background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
-      border-radius: 14px; padding: 20px 24px; margin-top: 40px;
-      font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
-      color: var(--text-dim); line-height: 2;
+    /* ═══ STATS ═══ */
+    .stats-strip {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      background: rgba(0,229,255,0.03); border-radius: 20px; overflow: hidden;
+      margin: 80px 0;
     }
-    .terminal .prompt { color: var(--accent); }
-    .terminal .comment { color: var(--text-muted); }
-    .terminal .val { color: var(--neon-green); }
-    .terminal .type { color: var(--accent3); }
-
-    /* ═══ STATS BAR ═══ */
-    .stats-bar {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;
-      margin: 60px 0;
+    .stat-s {
+      text-align: center; padding: 36px 16px; background: var(--bg);
     }
-    .stat-cell {
-      text-align: center; padding: 28px 16px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 16px;
-    }
-    .stat-cell .stat-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2.2rem; font-weight: 700; margin-bottom: 4px;
+    .stat-s .sn {
+      font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 700;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .stat-cell .stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
+    .stat-s .sl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
 
-    /* ═══ ANIMATIONS ═══ */
-    .reveal {
-      opacity: 0; transform: translateY(40px);
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .reveal.visible { opacity: 1; transform: none; }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
+    /* ═══ REVEAL ═══ */
+    .rv { opacity: 0; transform: translateY(50px); transition: all 1s cubic-bezier(0.16,1,0.3,1); }
+    .rv.vis { opacity: 1; transform: none; }
 
-    @media (max-width: 768px) {
+    @media (max-width: 900px) {
       .nav-links { display: none; }
-      .hero { min-height: auto; padding: 120px 0 80px; }
-      .dna-visual { display: none; }
-      .hex-grid { grid-template-columns: 1fr; }
-      .pipeline { padding-left: 30px; }
+      .node-field { grid-template-columns: 1fr; }
+      .const-nodes { grid-template-columns: repeat(2, 1fr); }
+      .stats-strip { grid-template-columns: repeat(2, 1fr); }
       section { padding: 80px 0; }
-      .cta-wrap { padding: 48px 24px; }
+    }
+    @media (max-width: 600px) {
+      .const-nodes { grid-template-columns: 1fr; }
+      .stats-strip { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <canvas id="bg-canvas"></canvas>
-  <div class="scanlines"></div>
+  <div id="scene-container"></div>
+  <div class="scan"></div>
 
   <div class="page">
-    <!-- ═══ NAV ═══ -->
     <nav>
       <div class="container">
-        <div class="nav-brand">
-          <div class="nav-logo">🧬</div>
-          <span>MEDICAL RESEARCH</span>
-        </div>
+        <div class="nav-brand"><div class="nav-logo">🧬</div> Medical Research</div>
         <div class="nav-links">
           <a href="#research">Research</a>
           <a href="#pipeline">Pipeline</a>
@@ -383,149 +319,78 @@
 
     <!-- ═══ HERO ═══ -->
     <section class="hero">
-      <div class="container" style="display:flex; align-items:center; justify-content:space-between;">
-        <div class="hero-content">
-          <div class="hero-tag">
-            <span class="pulse-dot"></span>
-            Research Active
-          </div>
-          <h1>
-            <span class="line1">Where Molecules</span><br>
-            <span class="line2">Meet Machines</span>
-          </h1>
-          <p>
-            We decode biochemical processes through the lens of artificial intelligence.
-            Our mission: find novel therapeutic approaches where traditional methods reach their limits.
-          </p>
+      <div class="container">
+        <div class="hero-inner">
+          <div class="hero-tag"><span class="pulse-dot"></span> Research Active</div>
+          <h1><span class="l1">Where Molecules</span><span class="l2">Meet Machines</span></h1>
+          <p>We decode biochemical processes through the lens of artificial intelligence. Finding novel therapeutic approaches where traditional methods reach their limits.</p>
           <div class="hero-btns">
-            <a href="#research" class="btn-glow primary">Explore Research →</a>
-            <a href="https://github.com/ryzkon/medical-research" class="btn-glow ghost">GitHub ↗</a>
+            <a href="#research" class="btn btn-primary">Explore Research →</a>
+            <a href="https://github.com/ryzkon/medical-research" class="btn btn-ghost">GitHub ↗</a>
           </div>
-
           <div class="terminal">
-            <span class="comment"># Latest experiment</span><br>
-            <span class="prompt">$</span> model.predict(<span class="type">protein_seq</span>, target=<span class="val">"BRCA1"</span>)<br>
-            <span class="prompt">→</span> binding_affinity: <span class="val">-9.42 kcal/mol</span> <span class="comment"># ΔG predicted</span><br>
-            <span class="prompt">→</span> confidence: <span class="val">0.94</span> | drug_candidate: <span class="val">True</span>
+            <span class="cm"># Latest experiment — binding affinity prediction</span><br>
+            <span class="pr">$</span> model.predict(<span class="tp">protein_seq</span>, target=<span class="vl">"BRCA1"</span>)<br>
+            <span class="pr">→</span> ΔG: <span class="vl">-9.42 kcal/mol</span> | confidence: <span class="vl">0.94</span><br>
+            <span class="pr">→</span> drug_candidate: <span class="vl">True</span> <span class="cm"># novel kinase inhibitor</span>
           </div>
         </div>
-
-        <svg class="dna-visual" viewBox="0 0 400 700" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="dna-grad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:#00e5ff;stop-opacity:0.6" />
-              <stop offset="50%" style="stop-color:#7c3aed;stop-opacity:0.6" />
-              <stop offset="100%" style="stop-color:#f472b6;stop-opacity:0.6" />
-            </linearGradient>
-          </defs>
-          <g id="dna-helix"></g>
-        </svg>
       </div>
     </section>
 
     <!-- ═══ STATS ═══ -->
     <div class="container">
-      <div class="stats-bar">
-        <div class="stat-cell reveal">
-          <div class="stat-num" data-target="6">0</div>
-          <div class="stat-label">Research Domains</div>
-        </div>
-        <div class="stat-cell reveal reveal-delay-1">
-          <div class="stat-num" data-target="12">0</div>
-          <div class="stat-label">ML Architectures</div>
-        </div>
-        <div class="stat-cell reveal reveal-delay-2">
-          <div class="stat-num" data-target="4">0</div>
-          <div class="stat-label">Papers in Progress</div>
-        </div>
-        <div class="stat-cell reveal reveal-delay-3">
-          <div class="stat-num" data-target="2">0</div>
-          <div class="stat-label">Clinical Partnerships</div>
-        </div>
+      <div class="stats-strip rv">
+        <div class="stat-s"><div class="sn" data-t="6">0</div><div class="sl">Research Streams</div></div>
+        <div class="stat-s"><div class="sn" data-t="12">0</div><div class="sl">ML Architectures</div></div>
+        <div class="stat-s"><div class="sn" data-t="4">0</div><div class="sl">Papers Active</div></div>
+        <div class="stat-s"><div class="sn" data-t="2">0</div><div class="sl">Clinical Partners</div></div>
       </div>
     </div>
 
-    <!-- ═══ RESEARCH ═══ -->
+    <!-- ═══ RESEARCH — NODE GRID ═══ -->
     <section id="research">
       <div class="container">
-        <div class="sec-tag reveal">Research Focus</div>
-        <h2 class="sec-title reveal">Biochemistry × Deep Learning</h2>
-        <p class="sec-desc reveal">
-          Six core research streams where computational methods can fundamentally
-          change how we understand and treat disease.
-        </p>
+        <div class="stag rv">Research Focus</div>
+        <h2 class="stitle rv">Biochemistry × Deep Learning</h2>
+        <p class="sdesc rv">Six interconnected research streams. Each one a node in a larger network of discovery.</p>
 
-        <div class="hex-grid">
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 01</div>
-            <div class="card-icon">🧪</div>
+        <div class="node-field">
+          <div class="node-cell rv">
+            <div class="node-idx">01</div>
             <h3>Protein Structure & Drug Design</h3>
-            <p>Deep learning models predict protein conformations and analyze binding pockets. We identify novel drug targets for autoimmune diseases, cancer, and neurodegeneration — replacing years of crystallography with hours of computation.</p>
-            <div class="card-tags">
-              <span class="card-tag">AlphaFold</span>
-              <span class="card-tag">Molecular Dynamics</span>
-              <span class="card-tag">Docking</span>
-            </div>
+            <p>Deep learning predicts protein conformations. We analyze binding pockets to identify drug targets for cancer, autoimmune disease, and neurodegeneration.</p>
+            <div class="node-tags"><span class="ntag">AlphaFold</span><span class="ntag">Mol. Dynamics</span><span class="ntag">Docking</span></div>
           </div>
-
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 02</div>
-            <div class="card-icon">🔬</div>
+          <div class="node-cell rv">
+            <div class="node-idx">02</div>
             <h3>Metabolic Pathway Analysis</h3>
-            <p>Graph neural networks model complex metabolic networks to identify dysregulation patterns in disease. We map the metabolic fingerprint of pathological states to find intervention points invisible to traditional analysis.</p>
-            <div class="card-tags">
-              <span class="card-tag">GNN</span>
-              <span class="card-tag">Systems Biology</span>
-              <span class="card-tag">Metabolomics</span>
-            </div>
+            <p>Graph neural networks model metabolic networks. We find dysregulation patterns and intervention points invisible to traditional approaches.</p>
+            <div class="node-tags"><span class="ntag">GNN</span><span class="ntag">Systems Bio</span><span class="ntag">Metabolomics</span></div>
           </div>
-
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 03</div>
-            <div class="card-icon">💊</div>
+          <div class="node-cell rv">
+            <div class="node-idx">03</div>
             <h3>Drug-Target Interaction</h3>
-            <p>Attention-based GNNs and transformer architectures predict molecular binding affinities. Our models screen millions of compounds against targets, collapsing the early discovery pipeline from years to weeks.</p>
-            <div class="card-tags">
-              <span class="card-tag">Transformers</span>
-              <span class="card-tag">Virtual Screening</span>
-              <span class="card-tag">ADMET</span>
-            </div>
+            <p>Attention-based architectures predict molecular binding affinities. Screening millions of compounds — collapsing discovery from years to weeks.</p>
+            <div class="node-tags"><span class="ntag">Transformers</span><span class="ntag">Virtual Screen</span><span class="ntag">ADMET</span></div>
           </div>
-
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 04</div>
-            <div class="card-icon">🧬</div>
-            <h3>Genomic Biomarker Discovery</h3>
-            <p>Large language models trained on genomic sequences identify clinically relevant genetic variants. Focused on rare diseases and oncology where traditional GWAS falls short — precision medicine at the sequence level.</p>
-            <div class="card-tags">
-              <span class="card-tag">Genomic LLMs</span>
-              <span class="card-tag">Variant Calling</span>
-              <span class="card-tag">Precision Med</span>
-            </div>
+          <div class="node-cell rv">
+            <div class="node-idx">04</div>
+            <h3>Genomic Biomarkers</h3>
+            <p>Large language models on genomic sequences. Identifying clinically relevant variants for rare diseases and oncology — precision medicine at sequence level.</p>
+            <div class="node-tags"><span class="ntag">Genomic LLM</span><span class="ntag">Variant Call</span><span class="ntag">Precision</span></div>
           </div>
-
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 05</div>
-            <div class="card-icon">📊</div>
+          <div class="node-cell rv">
+            <div class="node-idx">05</div>
             <h3>Clinical Trial Optimization</h3>
-            <p>Reinforcement learning frameworks for adaptive trial design. Dynamic patient allocation, dosing, and endpoint adjustment based on interim data — improving statistical power while reducing time-to-approval.</p>
-            <div class="card-tags">
-              <span class="card-tag">RL</span>
-              <span class="card-tag">Adaptive Design</span>
-              <span class="card-tag">Bayesian</span>
-            </div>
+            <p>Reinforcement learning for adaptive trial design. Dynamic allocation, dosing, endpoints — improving power while cutting time-to-approval.</p>
+            <div class="node-tags"><span class="ntag">RL</span><span class="ntag">Adaptive</span><span class="ntag">Bayesian</span></div>
           </div>
-
-          <div class="hex-card reveal">
-            <div class="card-num">STREAM — 06</div>
-            <div class="card-icon">🏥</div>
+          <div class="node-cell rv">
+            <div class="node-idx">06</div>
             <h3>Multi-Modal Diagnostics</h3>
-            <p>Combining biochemical markers with medical imaging through multi-modal AI. We integrate histopathology, radiology, and molecular data into unified diagnostic pipelines that outperform single-modality approaches.</p>
-            <div class="card-tags">
-              <span class="card-tag">Multi-Modal</span>
-              <span class="card-tag">Histopath</span>
-              <span class="card-tag">Fusion Models</span>
-            </div>
+            <p>Biochemical markers + medical imaging in unified AI pipelines. Histopathology, radiology, molecular data fused for superior diagnostic accuracy.</p>
+            <div class="node-tags"><span class="ntag">Multi-Modal</span><span class="ntag">Histopath</span><span class="ntag">Fusion</span></div>
           </div>
         </div>
       </div>
@@ -534,43 +399,17 @@
     <!-- ═══ PIPELINE ═══ -->
     <section id="pipeline">
       <div class="container">
-        <div class="sec-tag reveal">Methodology</div>
-        <h2 class="sec-title reveal">Research Pipeline</h2>
-        <p class="sec-desc reveal">
-          From hypothesis to clinical translation — a structured, reproducible approach.
-        </p>
+        <div class="stag rv">Methodology</div>
+        <h2 class="stitle rv">Research Pipeline</h2>
+        <p class="sdesc rv">Hypothesis → Computation → Wet Lab → Clinic. Structured. Reproducible.</p>
 
-        <div class="pipeline">
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 01</div>
-            <h3>Biochemical Hypothesis</h3>
-            <p>Identify molecular targets and pathways with clinical relevance through literature mining, knowledge graphs, and expert consultation.</p>
-          </div>
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 02</div>
-            <h3>Data Curation</h3>
-            <p>Aggregate from PDB, UniProt, TCGA, GEO, ChEMBL, and proprietary clinical partnerships. Quality-controlled, harmonized, ready for training.</p>
-          </div>
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 03</div>
-            <h3>Architecture Design</h3>
-            <p>Custom ML architectures tailored to the biochemical domain. Not off-the-shelf — purpose-built for molecular understanding.</p>
-          </div>
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 04</div>
-            <h3>In-Silico Validation</h3>
-            <p>Rigorous benchmarking: cross-validation, ablation studies, comparison against SOTA. We don't publish unless we beat the baseline.</p>
-          </div>
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 05</div>
-            <h3>Wet-Lab Confirmation</h3>
-            <p>Partner with laboratory teams for biochemical assays, cell-based experiments, and animal model validation of computational predictions.</p>
-          </div>
-          <div class="pipe-step reveal">
-            <div class="step-idx">PHASE 06</div>
-            <h3>Clinical Translation</h3>
-            <p>Transform validated findings into diagnostic tools, treatment protocols, or clinical trial designs — the final mile from bench to bedside.</p>
-          </div>
+        <div class="helix-pipe">
+          <div class="hp-step rv"><div class="hp-idx">PHASE 01</div><h3>Biochemical Hypothesis</h3><p>Identify molecular targets via literature mining, knowledge graphs, and domain experts.</p></div>
+          <div class="hp-step rv"><div class="hp-idx">PHASE 02</div><h3>Data Curation</h3><p>PDB, UniProt, TCGA, GEO, ChEMBL + clinical partnerships. Quality-controlled and harmonized.</p></div>
+          <div class="hp-step rv"><div class="hp-idx">PHASE 03</div><h3>Architecture Design</h3><p>Purpose-built ML architectures for the biochemical domain. Not off-the-shelf.</p></div>
+          <div class="hp-step rv"><div class="hp-idx">PHASE 04</div><h3>In-Silico Validation</h3><p>Cross-validation, ablation, SOTA comparison. We don't publish unless we beat the baseline.</p></div>
+          <div class="hp-step rv"><div class="hp-idx">PHASE 05</div><h3>Wet-Lab Confirmation</h3><p>Biochemical assays, cell experiments, animal model validation of computational predictions.</p></div>
+          <div class="hp-step rv"><div class="hp-idx">PHASE 06</div><h3>Clinical Translation</h3><p>Diagnostic tools, treatment protocols, trial designs. The final mile from bench to bedside.</p></div>
         </div>
       </div>
     </section>
@@ -578,21 +417,22 @@
     <!-- ═══ TECH ═══ -->
     <section id="tech">
       <div class="container">
-        <div class="sec-tag reveal">Technology</div>
-        <h2 class="sec-title reveal">Computational Toolkit</h2>
-        <p class="sec-desc reveal">
-          State-of-the-art infrastructure for molecular modeling and deep learning.
-        </p>
+        <div class="stag rv">Technology</div>
+        <h2 class="stitle rv">Computational Toolkit</h2>
+        <p class="sdesc rv">Infrastructure for molecular modeling and large-scale deep learning.</p>
 
-        <div class="orb-grid">
-          <div class="orb reveal"><div class="orb-icon">🐍</div><h4>PyTorch</h4><p>Core ML framework</p></div>
-          <div class="orb reveal"><div class="orb-icon">🧬</div><h4>AlphaFold</h4><p>Structure prediction</p></div>
-          <div class="orb reveal"><div class="orb-icon">⚗️</div><h4>RDKit</h4><p>Cheminformatics</p></div>
-          <div class="orb reveal"><div class="orb-icon">🤗</div><h4>Transformers</h4><p>Bio-NLP models</p></div>
-          <div class="orb reveal"><div class="orb-icon">🔥</div><h4>JAX / Flax</h4><p>HPC training</p></div>
-          <div class="orb reveal"><div class="orb-icon">📈</div><h4>MLflow</h4><p>Experiment tracking</p></div>
-          <div class="orb reveal"><div class="orb-icon">🕸️</div><h4>Neo4j</h4><p>Knowledge graphs</p></div>
-          <div class="orb reveal"><div class="orb-icon">☁️</div><h4>GPU Cluster</h4><p>Scalable compute</p></div>
+        <div class="constellation">
+          <canvas class="const-canvas" id="const-canvas"></canvas>
+          <div class="const-nodes">
+            <div class="c-node rv"><div class="c-ico">🐍</div><h4>PyTorch</h4><p>Core ML</p></div>
+            <div class="c-node rv"><div class="c-ico">🧬</div><h4>AlphaFold</h4><p>Structure</p></div>
+            <div class="c-node rv"><div class="c-ico">⚗️</div><h4>RDKit</h4><p>Cheminformatics</p></div>
+            <div class="c-node rv"><div class="c-ico">🤗</div><h4>Transformers</h4><p>Bio-NLP</p></div>
+            <div class="c-node rv"><div class="c-ico">🔥</div><h4>JAX</h4><p>HPC Training</p></div>
+            <div class="c-node rv"><div class="c-ico">📈</div><h4>MLflow</h4><p>Tracking</p></div>
+            <div class="c-node rv"><div class="c-ico">🕸️</div><h4>Neo4j</h4><p>Knowledge Graph</p></div>
+            <div class="c-node rv"><div class="c-ico">☁️</div><h4>GPU Cluster</h4><p>Compute</p></div>
+          </div>
         </div>
       </div>
     </section>
@@ -600,37 +440,26 @@
     <!-- ═══ PUBLICATIONS ═══ -->
     <section id="output">
       <div class="container">
-        <div class="sec-tag reveal">Output</div>
-        <h2 class="sec-title reveal">Publications & Preprints</h2>
+        <div class="stag rv">Output</div>
+        <h2 class="stitle rv">Publications & Preprints</h2>
+        <p class="sdesc rv">From working papers to peer review.</p>
 
-        <div class="pub-stack">
-          <div class="pub-row reveal">
-            <span class="pub-badge active">Active</span>
-            <div>
-              <h4>Attention-Based Graph Networks for Kinase Inhibitor Binding Affinity Prediction</h4>
-              <p>Novel GNN incorporating 3D molecular geometry + protein pocket features. 15% improvement over DeepDTA baseline on Davis & KIBA datasets.</p>
-            </div>
+        <div class="pub-flow">
+          <div class="pub-card rv">
+            <span class="pub-badge live">Active</span>
+            <div><h4>Attention-Based Graph Networks for Kinase Inhibitor Binding Affinity</h4><p>Novel GNN with 3D geometry + pocket features. 15% over DeepDTA on Davis & KIBA.</p></div>
           </div>
-          <div class="pub-row reveal">
-            <span class="pub-badge active">Active</span>
-            <div>
-              <h4>Metabolic Network Perturbation Signatures in T2D: A Multi-Omics Graph Transformer Approach</h4>
-              <p>Integration of metabolomics, transcriptomics, and proteomics via graph transformers. Early dysregulation markers in pre-diabetic cohorts.</p>
-            </div>
+          <div class="pub-card rv">
+            <span class="pub-badge live">Active</span>
+            <div><h4>Metabolic Perturbation Signatures in T2D: Multi-Omics Graph Transformers</h4><p>Metabolomics + transcriptomics + proteomics via graph transformers. Early dysregulation markers.</p></div>
           </div>
-          <div class="pub-row reveal">
-            <span class="pub-badge planned">Q4 2026</span>
-            <div>
-              <h4>Genomic Foundation Models for Rare Disease Variant Prioritization</h4>
-              <p>Fine-tuning genomic LLMs on rare disease cohorts — pathogenic variant classification beyond ACMG guidelines.</p>
-            </div>
+          <div class="pub-card rv">
+            <span class="pub-badge soon">Q4 2026</span>
+            <div><h4>Genomic Foundation Models for Rare Disease Variant Prioritization</h4><p>Fine-tuned genomic LLMs — pathogenic variant classification beyond ACMG.</p></div>
           </div>
-          <div class="pub-row reveal">
-            <span class="pub-badge planned">2027</span>
-            <div>
-              <h4>RL Framework for Adaptive Oncology Trials: Simulation Study</h4>
-              <p>Comprehensive RL-based dose-finding and patient allocation validated against traditional 3+3 designs.</p>
-            </div>
+          <div class="pub-card rv">
+            <span class="pub-badge soon">2027</span>
+            <div><h4>RL Framework for Adaptive Oncology Trials</h4><p>RL-based dose-finding validated against 3+3 designs in extensive simulation.</p></div>
           </div>
         </div>
       </div>
@@ -639,162 +468,327 @@
     <!-- ═══ CTA ═══ -->
     <section id="contact">
       <div class="container">
-        <div class="cta-wrap reveal">
-          <h2>Let's Push the Boundaries</h2>
-          <p>We're seeking collaborators from biochemistry, medicine, and computational biology.</p>
-          <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-            <a href="mailto:personalcraftinglive@gmail.com" class="btn-glow primary">Get in Touch →</a>
-            <a href="https://github.com/ryzkon/medical-research" class="btn-glow ghost">View Source ↗</a>
+        <div class="cta-box rv">
+          <h2>Push the Boundaries With Us</h2>
+          <p>Seeking collaborators from biochemistry, medicine, and computational biology.</p>
+          <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+            <a href="mailto:personalcraftinglive@gmail.com" class="btn btn-primary">Get in Touch →</a>
+            <a href="https://github.com/ryzkon/medical-research" class="btn btn-ghost">View Source ↗</a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ═══ FOOTER ═══ -->
     <footer>
       <div class="container">
         <p>© 2026 Medical Research — AI-Driven Biochemical Discovery</p>
-        <p style="margin-top:8px;">
-          <a href="https://github.com/ryzkon/medical-research">GitHub</a> ·
-          <a href="mailto:personalcraftinglive@gmail.com">Contact</a>
-        </p>
+        <p style="margin-top:6px;"><a href="https://github.com/ryzkon/medical-research">GitHub</a> · <a href="mailto:personalcraftinglive@gmail.com">Contact</a></p>
       </div>
     </footer>
   </div>
 
+  <!-- ═══ THREE.JS — MANDELBULB + PARTICLES ═══ -->
   <script>
-    // ═══ PARTICLE BACKGROUND ═══
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    const PARTICLE_COUNT = 80;
+  (function(){
+    const container = document.getElementById('scene-container');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
 
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.z = 4;
+
+    // ═══ MANDELBULB SHADER ═══
+    const bulbGeo = new THREE.PlaneGeometry(2, 2);
+    const bulbMat = new THREE.ShaderMaterial({
+      transparent: true,
+      uniforms: {
+        uTime: { value: 0 },
+        uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+        uScroll: { value: 0 },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = vec4(position, 1.0); }
+      `,
+      fragmentShader: `
+        precision highp float;
+        uniform float uTime;
+        uniform vec2 uResolution;
+        uniform float uScroll;
+        varying vec2 vUv;
+
+        // Mandelbulb distance estimator
+        float mandelbulb(vec3 pos, float power) {
+          vec3 z = pos;
+          float dr = 1.0;
+          float r = 0.0;
+          for (int i = 0; i < 8; i++) {
+            r = length(z);
+            if (r > 2.0) break;
+            float theta = acos(z.z / r);
+            float phi = atan(z.y, z.x);
+            dr = pow(r, power - 1.0) * power * dr + 1.0;
+            float zr = pow(r, power);
+            theta *= power;
+            phi *= power;
+            z = zr * vec3(sin(theta)*cos(phi), sin(phi)*sin(theta), cos(theta));
+            z += pos;
+          }
+          return 0.5 * log(r) * r / dr;
+        }
+
+        float scene(vec3 p) {
+          float t = uTime * 0.15;
+          p.xz *= mat2(cos(t), -sin(t), sin(t), cos(t));
+          p.yz *= mat2(cos(t*0.7), -sin(t*0.7), sin(t*0.7), cos(t*0.7));
+          float power = 8.0 + sin(uTime * 0.1) * 1.5;
+          return mandelbulb(p, power);
+        }
+
+        void main() {
+          vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / min(uResolution.x, uResolution.y);
+          // Shift fractal to right side
+          uv.x -= 0.35;
+          uv.y += uScroll * 0.3;
+
+          vec3 ro = vec3(0.0, 0.0, -2.8);
+          vec3 rd = normalize(vec3(uv, 1.2));
+
+          float t = 0.0;
+          float glow = 0.0;
+          for (int i = 0; i < 64; i++) {
+            vec3 p = ro + rd * t;
+            float d = scene(p);
+            glow += 0.02 / (0.01 + d * d * 4.0);
+            if (d < 0.001 || t > 6.0) break;
+            t += d * 0.7;
+          }
+
+          vec3 col = vec3(0.0);
+          col += vec3(0.0, 0.9, 1.0) * glow * 0.08;
+          col += vec3(0.5, 0.2, 0.9) * glow * 0.04;
+          col += vec3(0.95, 0.3, 0.6) * glow * glow * 0.005;
+
+          // Fade by scroll
+          float fade = 1.0 - smoothstep(0.0, 2.0, uScroll);
+          gl_FragColor = vec4(col * fade, length(col) * fade);
+        }
+      `
+    });
+    const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
+    scene.add(bulbMesh);
+
+    // ═══ PARTICLE CLOUD ═══
+    const PCOUNT = 3000;
+    const pGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(PCOUNT * 3);
+    const colors = new Float32Array(PCOUNT * 3);
+    const sizes = new Float32Array(PCOUNT);
+    const velocities = [];
+
+    for (let i = 0; i < PCOUNT; i++) {
+      // Distribute in a shell-like formation
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 1.5 + Math.random() * 2.5;
+      positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i*3+2] = r * Math.cos(phi);
+
+      // Color palette: cyan, purple, pink
+      const c = Math.random();
+      if (c < 0.4) { colors[i*3]=0; colors[i*3+1]=0.9; colors[i*3+2]=1; }
+      else if (c < 0.7) { colors[i*3]=0.49; colors[i*3+1]=0.23; colors[i*3+2]=0.93; }
+      else { colors[i*3]=0.96; colors[i*3+1]=0.29; colors[i*3+2]=0.69; }
+
+      sizes[i] = Math.random() * 3 + 0.5;
+      velocities.push({
+        x: (Math.random()-0.5)*0.002,
+        y: (Math.random()-0.5)*0.002,
+        z: (Math.random()-0.5)*0.002,
+        orbit: Math.random() * 0.003 + 0.001,
+        phase: Math.random() * Math.PI * 2,
+      });
     }
-    resize();
-    window.addEventListener('resize', resize);
+    pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    pGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    class Particle {
-      constructor() { this.reset(); }
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.vy = (Math.random() - 0.5) * 0.3;
-        this.r = Math.random() * 2 + 0.5;
-        this.alpha = Math.random() * 0.3 + 0.05;
-        this.color = ['0,229,255', '124,58,237', '244,114,182'][Math.floor(Math.random()*3)];
-      }
-      update() {
-        this.x += this.vx; this.y += this.vy;
-        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
-        ctx.fill();
-      }
-    }
+    const pMat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexColors: true,
+      uniforms: { uTime: { value: 0 }, uPixelRatio: { value: renderer.getPixelRatio() } },
+      vertexShader: `
+        attribute float size;
+        varying vec3 vColor;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          vec3 pos = position;
+          // Gentle orbital motion
+          float angle = uTime * 0.1;
+          mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+          pos.xz *= rot;
+          vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+          gl_PointSize = size * uPixelRatio * (100.0 / -mvPos.z);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          if (d > 0.5) discard;
+          float alpha = smoothstep(0.5, 0.1, d) * 0.4;
+          gl_FragColor = vec4(vColor, alpha);
+        }
+      `
+    });
+    const pSystem = new THREE.Points(pGeo, pMat);
+    scene.add(pSystem);
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+    // ═══ CONNECTING LINES (nearest neighbors) ═══
+    const lineGeo = new THREE.BufferGeometry();
+    const MAX_LINES = 400;
+    const linePositions = new Float32Array(MAX_LINES * 6);
+    const lineColors = new Float32Array(MAX_LINES * 6);
+    lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+    lineGeo.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
+    const lineMat = new THREE.LineBasicMaterial({
+      vertexColors: true, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending
+    });
+    const lines = new THREE.LineSegments(lineGeo, lineMat);
+    scene.add(lines);
 
-    function drawConnections() {
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < 150) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(0,229,255,${0.04 * (1 - dist/150)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+    // ═══ SCROLL TRACKING ═══
+    let scrollY = 0;
+    window.addEventListener('scroll', () => { scrollY = window.scrollY / window.innerHeight; });
+
+    // ═══ ANIMATION LOOP ═══
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      bulbMat.uniforms.uTime.value = t;
+      bulbMat.uniforms.uScroll.value = scrollY;
+      pMat.uniforms.uTime.value = t;
+
+      // Update particle positions (slow drift)
+      const pos = pGeo.attributes.position.array;
+      for (let i = 0; i < PCOUNT; i++) {
+        const v = velocities[i];
+        pos[i*3] += Math.sin(t * v.orbit + v.phase) * 0.003;
+        pos[i*3+1] += Math.cos(t * v.orbit * 1.3 + v.phase) * 0.002;
+        pos[i*3+2] += Math.sin(t * v.orbit * 0.7) * 0.002;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+
+      // Update connecting lines (sample subset)
+      let lineIdx = 0;
+      const step = Math.max(1, Math.floor(PCOUNT / 100));
+      for (let i = 0; i < PCOUNT && lineIdx < MAX_LINES; i += step) {
+        for (let j = i + step; j < PCOUNT && lineIdx < MAX_LINES; j += step) {
+          const dx = pos[i*3] - pos[j*3];
+          const dy = pos[i*3+1] - pos[j*3+1];
+          const dz = pos[i*3+2] - pos[j*3+2];
+          const dist = Math.sqrt(dx*dx+dy*dy+dz*dz);
+          if (dist < 1.2) {
+            const li = lineIdx * 6;
+            linePositions[li]=pos[i*3]; linePositions[li+1]=pos[i*3+1]; linePositions[li+2]=pos[i*3+2];
+            linePositions[li+3]=pos[j*3]; linePositions[li+4]=pos[j*3+1]; linePositions[li+5]=pos[j*3+2];
+            const alpha = 1 - dist/1.2;
+            lineColors[li]=0; lineColors[li+1]=0.9*alpha; lineColors[li+2]=alpha;
+            lineColors[li+3]=0.5*alpha; lineColors[li+4]=0.2*alpha; lineColors[li+5]=0.9*alpha;
+            lineIdx++;
           }
         }
       }
-    }
+      lineGeo.setDrawRange(0, lineIdx * 2);
+      lineGeo.attributes.position.needsUpdate = true;
+      lineGeo.attributes.color.needsUpdate = true;
 
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => { p.update(); p.draw(); });
-      drawConnections();
-      requestAnimationFrame(animate);
+      // Camera subtle movement
+      camera.position.x = Math.sin(t * 0.1) * 0.3;
+      camera.position.y = Math.cos(t * 0.15) * 0.2;
+      camera.lookAt(0, 0, 0);
+
+      // Fade particles by scroll
+      pMat.opacity = Math.max(0.1, 1 - scrollY * 0.5);
+
+      renderer.render(scene, camera);
     }
     animate();
 
-    // ═══ DNA HELIX ═══
-    const helix = document.getElementById('dna-helix');
-    if (helix) {
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const pairs = 30;
-      for (let i = 0; i < pairs; i++) {
-        const y = 30 + i * 22;
-        const offset = i * 0.35;
-        const x1 = 200 + Math.sin(offset) * 120;
-        const x2 = 200 - Math.sin(offset) * 120;
-        const opacity = 0.3 + Math.abs(Math.sin(offset)) * 0.5;
-
-        // Backbone
-        const line = document.createElementNS(svgNS, 'line');
-        line.setAttribute('x1', x1); line.setAttribute('y1', y);
-        line.setAttribute('x2', x2); line.setAttribute('y2', y);
-        line.setAttribute('stroke', `rgba(0,229,255,${opacity * 0.3})`);
-        line.setAttribute('stroke-width', '1.5');
-        helix.appendChild(line);
-
-        // Base pairs
-        [x1, x2].forEach((x, idx) => {
-          const c = document.createElementNS(svgNS, 'circle');
-          c.setAttribute('cx', x); c.setAttribute('cy', y);
-          c.setAttribute('r', 4);
-          c.setAttribute('fill', idx === 0 ? `rgba(0,229,255,${opacity})` : `rgba(124,58,237,${opacity})`);
-          c.style.animation = `dna-bob ${2 + Math.random()}s ease-in-out ${Math.random()*2}s infinite`;
-          helix.appendChild(c);
-        });
-      }
-      // Add animation
-      const style = document.createElement('style');
-      style.textContent = '@keyframes dna-bob { 0%,100% { transform: translateX(0); } 50% { transform: translateX(8px); } }';
-      document.head.appendChild(style);
-    }
-
-    // ═══ REVEAL ON SCROLL ═══
-    const revealObs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-
-    // ═══ COUNT UP ═══
-    const countObs = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (!e.isIntersecting) return;
-        const el = e.target;
-        const target = parseInt(el.dataset.target);
-        let current = 0;
-        const step = () => {
-          current++;
-          el.textContent = current;
-          if (current < target) requestAnimationFrame(step);
-        };
-        step();
-        countObs.unobserve(el);
-      });
-    }, { threshold: 0.5 });
-    document.querySelectorAll('[data-target]').forEach(el => countObs.observe(el));
-
-    // ═══ SMOOTH NAV ═══
-    document.querySelectorAll('nav a[href^="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
-      });
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      bulbMat.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     });
+  })();
+
+  // ═══ NODE CELL GLOW FOLLOW ═══
+  document.querySelectorAll('.node-cell').forEach(cell => {
+    cell.addEventListener('mousemove', e => {
+      const r = cell.getBoundingClientRect();
+      cell.style.setProperty('--gx', ((e.clientX-r.left)/r.width*100)+'%');
+      cell.style.setProperty('--gy', ((e.clientY-r.top)/r.height*100)+'%');
+    });
+  });
+
+  // ═══ REVEAL ON SCROLL ═══
+  const rvObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('vis'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.rv').forEach(el => rvObs.observe(el));
+
+  // ═══ COUNT UP ═══
+  const cObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(!e.isIntersecting) return;
+      const el = e.target, tgt = parseInt(el.dataset.t);
+      let cur = 0;
+      const tick = () => { cur++; el.textContent = cur; if(cur<tgt) requestAnimationFrame(tick); };
+      tick(); cObs.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('[data-t]').forEach(el => cObs.observe(el));
+
+  // ═══ CONSTELLATION LINES ═══
+  (function(){
+    const cv = document.getElementById('const-canvas');
+    if(!cv) return;
+    const ctx = cv.getContext('2d');
+    function draw() {
+      const r = cv.parentElement.getBoundingClientRect();
+      cv.width = r.width; cv.height = r.height;
+      const nodes = cv.parentElement.querySelectorAll('.c-node');
+      const pts = [];
+      nodes.forEach(n => {
+        const nr = n.getBoundingClientRect();
+        pts.push({ x: nr.left - r.left + nr.width/2, y: nr.top - r.top + nr.height/2 });
+      });
+      ctx.clearRect(0,0,cv.width,cv.height);
+      for(let i=0;i<pts.length;i++){
+        for(let j=i+1;j<pts.length;j++){
+          const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);
+          if(d<400){
+            ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+            ctx.strokeStyle=`rgba(0,229,255,${0.06*(1-d/400)})`;
+            ctx.lineWidth=0.8; ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  })();
   </script>
 </body>
 </html>
