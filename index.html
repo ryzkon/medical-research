@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medical Research — AI-Driven Biochemical Discovery</title>
+  <meta name="description" content="Exploring biochemical processes with AI and machine learning to find novel medical approaches.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --bg-card: #111827;
+      --bg-card-hover: #1a2332;
+      --border: rgba(59, 130, 246, 0.15);
+      --blue: #3b82f6;
+      --blue-glow: rgba(59, 130, 246, 0.3);
+      --cyan: #06b6d4;
+      --green: #10b981;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --text-dimmer: #64748b;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ═══ ANIMATED BACKGROUND ═══ */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .bg-glow {
+      position: fixed; z-index: 0; pointer-events: none;
+      width: 600px; height: 600px; border-radius: 50%;
+      filter: blur(120px); opacity: 0.15;
+    }
+    .bg-glow-1 { top: -200px; right: -100px; background: var(--blue); }
+    .bg-glow-2 { bottom: -200px; left: -100px; background: var(--purple); }
+    .bg-glow-3 { top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--cyan); opacity: 0.05; width: 900px; height: 900px; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+    /* ═══ NAVBAR ═══ */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(10,14,23,0.85); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+    }
+    nav .container { display: flex; justify-content: space-between; align-items: center; }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+    .nav-brand .icon { font-size: 1.5rem; }
+    .nav-links { display: flex; gap: 28px; }
+    .nav-links a {
+      color: var(--text-dim); text-decoration: none; font-size: 0.9rem;
+      font-weight: 500; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--blue); }
+
+    /* ═══ HERO ═══ */
+    .hero {
+      padding: 120px 0 80px; text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 100px; padding: 6px 16px;
+      font-size: 0.8rem; font-weight: 500; color: var(--blue);
+      margin-bottom: 28px;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .hero h1 {
+      font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800;
+      line-height: 1.1; margin-bottom: 24px;
+      background: linear-gradient(135deg, #e2e8f0 0%, #3b82f6 50%, #06b6d4 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.2rem; color: var(--text-dim); max-width: 700px; margin: 0 auto 40px;
+      line-height: 1.8;
+    }
+    .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      padding: 12px 28px; border-radius: 12px; font-weight: 600; font-size: 0.95rem;
+      text-decoration: none; transition: all 0.3s; cursor: pointer; border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      color: white; box-shadow: 0 4px 20px var(--blue-glow);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px var(--blue-glow); }
+    .btn-outline {
+      background: transparent; color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ═══ SECTIONS ═══ */
+    section { padding: 80px 0; }
+    .section-label {
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800; margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 1.05rem; color: var(--text-dim); max-width: 650px; margin-bottom: 48px;
+    }
+
+    /* ═══ RESEARCH AREAS ═══ */
+    .research-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;
+    }
+    .research-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px; transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .research-card:hover {
+      border-color: rgba(59,130,246,0.3); transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+    }
+    .research-card .card-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex;
+      align-items: center; justify-content: center; font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .research-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; }
+    .research-card p { color: var(--text-dim); font-size: 0.92rem; line-height: 1.7; }
+    .research-card .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+    .tag {
+      font-size: 0.72rem; padding: 3px 10px; border-radius: 100px;
+      background: rgba(59,130,246,0.08); color: var(--blue); font-weight: 500;
+      border: 1px solid rgba(59,130,246,0.15);
+    }
+
+    /* ═══ APPROACH ═══ */
+    .approach-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;
+    }
+    .approach-step {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; text-align: center;
+    }
+    .step-num {
+      font-size: 2.5rem; font-weight: 800; font-family: 'JetBrains Mono', monospace;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .approach-step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .approach-step p { font-size: 0.88rem; color: var(--text-dim); }
+
+    /* ═══ TECH STACK ═══ */
+    .stack-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;
+    }
+    .stack-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px; text-align: center;
+      transition: border-color 0.3s;
+    }
+    .stack-item:hover { border-color: rgba(59,130,246,0.3); }
+    .stack-item .emoji { font-size: 2rem; margin-bottom: 8px; }
+    .stack-item h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+    .stack-item p { font-size: 0.78rem; color: var(--text-dimmer); }
+
+    /* ═══ PUBLICATIONS ═══ */
+    .pub-list { display: flex; flex-direction: column; gap: 16px; }
+    .pub-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; display: flex; gap: 20px; align-items: flex-start;
+    }
+    .pub-status {
+      font-size: 0.7rem; font-weight: 600; padding: 4px 12px; border-radius: 100px;
+      white-space: nowrap;
+    }
+    .pub-status.wip { background: rgba(234,179,8,0.1); color: #eab308; border: 1px solid rgba(234,179,8,0.2); }
+    .pub-status.planned { background: rgba(59,130,246,0.1); color: var(--blue); border: 1px solid rgba(59,130,246,0.2); }
+    .pub-item h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .pub-item p { font-size: 0.85rem; color: var(--text-dim); }
+
+    /* ═══ CTA ═══ */
+    .cta-section {
+      text-align: center; padding: 100px 0;
+    }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(6,182,212,0.05));
+      border: 1px solid var(--border); border-radius: 24px;
+      padding: 60px 40px;
+    }
+    .cta-box h2 { font-size: 2rem; font-weight: 800; margin-bottom: 16px; }
+    .cta-box p { color: var(--text-dim); max-width: 500px; margin: 0 auto 32px; }
+
+    /* ═══ FOOTER ═══ */
+    footer {
+      border-top: 1px solid var(--border); padding: 40px 0;
+      text-align: center; color: var(--text-dimmer); font-size: 0.85rem;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    /* ═══ DNA HELIX ANIMATION ═══ */
+    .dna-container { position: relative; height: 300px; margin: 40px auto; max-width: 600px; overflow: hidden; }
+    .dna-strand { position: absolute; width: 100%; height: 100%; }
+    .dna-dot {
+      position: absolute; width: 8px; height: 8px; border-radius: 50%;
+      animation: dna-float 4s ease-in-out infinite;
+    }
+    @keyframes dna-float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-15px) scale(1.2); }
+    }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero { padding: 80px 0 60px; }
+      .research-grid { grid-template-columns: 1fr; }
+      section { padding: 60px 0; }
+    }
+
+    /* ═══ FADE-IN ═══ */
+    .fade-up { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <!-- ═══ NAVBAR ═══ -->
+  <nav>
+    <div class="container">
+      <div class="nav-brand">
+        <span class="icon">🧬</span>
+        <span>MedResearch<span style="color:var(--blue)">.ai</span></span>
+      </div>
+      <div class="nav-links">
+        <a href="#research">Research</a>
+        <a href="#approach">Approach</a>
+        <a href="#tech">Technology</a>
+        <a href="#publications">Publications</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══ HERO ═══ -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge"><span class="dot"></span> Active Research Program</div>
+      <h1>AI-Driven Biochemical<br>Discovery</h1>
+      <p>
+        We investigate fundamental biochemical processes and combine them with cutting-edge
+        AI and machine learning methods to find novel approaches in medical research and therapy development.
+      </p>
+      <div class="hero-actions">
+        <a href="#research" class="btn btn-primary">Explore Research</a>
+        <a href="https://github.com/ryzkon/medical-research" class="btn btn-outline">View on GitHub ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ RESEARCH AREAS ═══ -->
+  <section id="research">
+    <div class="container">
+      <div class="section-label fade-up">Research Focus</div>
+      <h2 class="section-title fade-up">Bridging Biochemistry & AI</h2>
+      <p class="section-desc fade-up">
+        Our interdisciplinary approach targets key biochemical processes where machine learning
+        can accelerate discovery and improve clinical outcomes.
+      </p>
+
+      <div class="research-grid">
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(139,92,246,0.1);">🧪</div>
+          <h3>Protein Structure & Drug Design</h3>
+          <p>
+            Leveraging deep learning models like AlphaFold and ESMFold to predict protein conformations.
+            We analyze binding pockets and molecular interactions to identify novel drug targets
+            for autoimmune diseases, cancer, and neurodegenerative disorders.
+          </p>
+          <div class="tags">
+            <span class="tag">AlphaFold</span>
+            <span class="tag">Molecular Dynamics</span>
+            <span class="tag">Drug Targets</span>
+          </div>
+        </div>
+
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(6,182,212,0.1);">🔬</div>
+          <h3>Metabolic Pathway Analysis</h3>
+          <p>
+            Using graph neural networks and systems biology approaches to model complex metabolic
+            networks. We identify pathway dysregulation patterns in disease states to find
+            metabolic biomarkers and therapeutic intervention points.
+          </p>
+          <div class="tags">
+            <span class="tag">Graph Neural Networks</span>
+            <span class="tag">Systems Biology</span>
+            <span class="tag">Metabolomics</span>
+          </div>
+        </div>
+
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(16,185,129,0.1);">💊</div>
+          <h3>Drug-Target Interaction Prediction</h3>
+          <p>
+            Applying attention-based GNNs and transformer architectures to predict molecular
+            binding affinities with high accuracy. Our models screen millions of compounds
+            against target proteins, reducing wet-lab validation cycles by orders of magnitude.
+          </p>
+          <div class="tags">
+            <span class="tag">Transformers</span>
+            <span class="tag">Binding Affinity</span>
+            <span class="tag">Virtual Screening</span>
+          </div>
+        </div>
+
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(236,72,153,0.1);">🧬</div>
+          <h3>Genomic Biomarker Discovery</h3>
+          <p>
+            Training large language models on genomic sequences to identify clinically relevant
+            genetic variants and expression signatures. We focus on rare diseases and oncology,
+            where traditional GWAS approaches often fall short.
+          </p>
+          <div class="tags">
+            <span class="tag">Genomic LLMs</span>
+            <span class="tag">Variant Calling</span>
+            <span class="tag">Precision Medicine</span>
+          </div>
+        </div>
+
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(234,179,8,0.1);">📊</div>
+          <h3>Clinical Trial Optimization</h3>
+          <p>
+            Developing reinforcement learning frameworks for adaptive clinical trial design.
+            Our approach dynamically adjusts patient allocation, dosing, and endpoints based
+            on interim data, improving statistical power and reducing time-to-approval.
+          </p>
+          <div class="tags">
+            <span class="tag">Reinforcement Learning</span>
+            <span class="tag">Adaptive Design</span>
+            <span class="tag">Bayesian Methods</span>
+          </div>
+        </div>
+
+        <div class="research-card fade-up">
+          <div class="card-icon" style="background:rgba(59,130,246,0.1);">🏥</div>
+          <h3>Medical Imaging & Diagnostics</h3>
+          <p>
+            Combining biochemical markers with medical imaging through multi-modal AI models.
+            We develop diagnostic pipelines that integrate histopathology, radiology, and
+            molecular data for more accurate disease classification and prognosis.
+          </p>
+          <div class="tags">
+            <span class="tag">Multi-Modal AI</span>
+            <span class="tag">Histopathology</span>
+            <span class="tag">Diagnostic Pipeline</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ APPROACH ═══ -->
+  <section id="approach" style="background:rgba(59,130,246,0.02);">
+    <div class="container">
+      <div class="section-label fade-up">Methodology</div>
+      <h2 class="section-title fade-up">Our Research Pipeline</h2>
+      <p class="section-desc fade-up">
+        A structured, reproducible approach from hypothesis to clinical validation.
+      </p>
+
+      <div class="approach-grid">
+        <div class="approach-step fade-up">
+          <div class="step-num">01</div>
+          <h3>Biochemical Hypothesis</h3>
+          <p>Identify molecular targets and pathways with clinical relevance through literature mining and expert consultation.</p>
+        </div>
+        <div class="approach-step fade-up">
+          <div class="step-num">02</div>
+          <h3>Data Acquisition</h3>
+          <p>Curate datasets from public databases (PDB, UniProt, TCGA, GEO) and proprietary clinical data partnerships.</p>
+        </div>
+        <div class="approach-step fade-up">
+          <div class="step-num">03</div>
+          <h3>Model Development</h3>
+          <p>Design and train specialized ML architectures tailored to the biochemical domain and specific research question.</p>
+        </div>
+        <div class="approach-step fade-up">
+          <div class="step-num">04</div>
+          <h3>In-Silico Validation</h3>
+          <p>Rigorous computational validation using cross-validation, ablation studies, and comparison against established baselines.</p>
+        </div>
+        <div class="approach-step fade-up">
+          <div class="step-num">05</div>
+          <h3>Wet-Lab Collaboration</h3>
+          <p>Partner with laboratory teams to validate computational predictions through biochemical assays and cell-based experiments.</p>
+        </div>
+        <div class="approach-step fade-up">
+          <div class="step-num">06</div>
+          <h3>Clinical Translation</h3>
+          <p>Work with medical professionals to translate findings into diagnostic tools, treatment protocols, or clinical trial designs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ TECH STACK ═══ -->
+  <section id="tech">
+    <div class="container">
+      <div class="section-label fade-up">Technology</div>
+      <h2 class="section-title fade-up">Our Computational Toolkit</h2>
+      <p class="section-desc fade-up">
+        State-of-the-art tools for molecular modeling, deep learning, and biomedical data analysis.
+      </p>
+
+      <div class="stack-grid">
+        <div class="stack-item fade-up">
+          <div class="emoji">🐍</div>
+          <h4>Python & PyTorch</h4>
+          <p>Core ML framework</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">🧬</div>
+          <h4>AlphaFold / ESMFold</h4>
+          <p>Protein structure prediction</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">⚗️</div>
+          <h4>RDKit & DeepChem</h4>
+          <p>Molecular modeling</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">🤗</div>
+          <h4>Hugging Face</h4>
+          <p>Biomedical NLP models</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">📈</div>
+          <h4>MLflow</h4>
+          <p>Experiment tracking</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">🔥</div>
+          <h4>JAX / Flax</h4>
+          <p>High-performance computing</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">🗄️</div>
+          <h4>PostgreSQL & Neo4j</h4>
+          <p>Knowledge graph storage</p>
+        </div>
+        <div class="stack-item fade-up">
+          <div class="emoji">☁️</div>
+          <h4>Cloud GPU / HPC</h4>
+          <p>Scalable training infra</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ PUBLICATIONS ═══ -->
+  <section id="publications" style="background:rgba(59,130,246,0.02);">
+    <div class="container">
+      <div class="section-label fade-up">Output</div>
+      <h2 class="section-title fade-up">Publications & Preprints</h2>
+      <p class="section-desc fade-up">
+        Our research output — from working papers to peer-reviewed publications.
+      </p>
+
+      <div class="pub-list">
+        <div class="pub-item fade-up">
+          <span class="pub-status wip">In Progress</span>
+          <div>
+            <h4>Attention-Based Graph Networks for Predicting Kinase Inhibitor Binding Affinities</h4>
+            <p>A novel GNN architecture that incorporates 3D molecular geometry and protein pocket features to predict binding free energies. Preliminary results show 15% improvement over DeepDTA baseline.</p>
+          </div>
+        </div>
+        <div class="pub-item fade-up">
+          <span class="pub-status wip">In Progress</span>
+          <div>
+            <h4>Metabolic Network Perturbation Signatures in Type 2 Diabetes: A Multi-Omics ML Approach</h4>
+            <p>Integration of metabolomics, transcriptomics, and proteomics data using graph transformers to identify early metabolic dysregulation markers in pre-diabetic cohorts.</p>
+          </div>
+        </div>
+        <div class="pub-item fade-up">
+          <span class="pub-status planned">Planned Q4 2026</span>
+          <div>
+            <h4>Genomic Foundation Models for Rare Disease Variant Prioritization</h4>
+            <p>Fine-tuning large genomic language models on rare disease cohorts to improve pathogenic variant classification beyond current ACMG guidelines.</p>
+          </div>
+        </div>
+        <div class="pub-item fade-up">
+          <span class="pub-status planned">Planned 2027</span>
+          <div>
+            <h4>Reinforcement Learning Framework for Adaptive Oncology Trials: A Simulation Study</h4>
+            <p>A comprehensive RL-based framework for dose-finding and patient allocation in phase I/II oncology trials, validated through extensive simulation against traditional 3+3 designs.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CTA ═══ -->
+  <section class="cta-section" id="contact">
+    <div class="container">
+      <div class="cta-box fade-up">
+        <h2>Interested in Collaboration?</h2>
+        <p>We're looking for research partners from biochemistry, medicine, and computational biology to push the boundaries of AI-driven medical discovery.</p>
+        <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+          <a href="mailto:personalcraftinglive@gmail.com" class="btn btn-primary">Get in Touch</a>
+          <a href="https://github.com/ryzkon/medical-research" class="btn btn-outline">GitHub Repository ↗</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER ═══ -->
+  <footer>
+    <div class="container">
+      <p>© 2026 MedResearch.ai — AI-Driven Biochemical Discovery</p>
+      <p style="margin-top:8px;">
+        <a href="https://github.com/ryzkon/medical-research">GitHub</a> ·
+        <a href="mailto:personalcraftinglive@gmail.com">Contact</a>
+      </p>
+    </div>
+  </footer>
+
+  <!-- ═══ SCROLL ANIMATIONS ═══ -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
