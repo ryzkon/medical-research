@@ -555,15 +555,14 @@
         void main() {
           vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / min(uResolution.x, uResolution.y);
 
-          // Fractal position drifts: oscillates left/right based on scroll
-          // Hero: right side. Scroll down: moves to center, then left, then back...
-          float xDrift = 0.35 * cos(uScroll * 1.2);
-          float yDrift = 0.2 * sin(uScroll * 0.8);
+          // Fractal stays centered with gentle drift — never leaves viewport
+          float xDrift = 0.15 * sin(uScroll * 0.6 + uTime * 0.05);
+          float yDrift = 0.1 * cos(uScroll * 0.4);
           uv.x -= xDrift;
           uv.y += yDrift;
 
-          // Zoom pulses slightly with scroll
-          float zoom = 1.2 + 0.15 * sin(uScroll * 2.0);
+          // Gentle zoom breathing
+          float zoom = 1.2 + 0.08 * sin(uScroll * 0.8 + uTime * 0.1);
 
           vec3 ro = vec3(0.0, 0.0, -2.8);
           vec3 rd = normalize(vec3(uv, zoom));
@@ -578,22 +577,27 @@
             t += d * 0.7;
           }
 
-          // Color shifts with scroll — different mood per section
-          float hueShift = uScroll * 0.4;
+          // Clamp glow to prevent bright flashes
+          glow = min(glow, 12.0);
+
+          // Smooth color shift per section
+          float hueShift = uScroll * 0.3;
           vec3 c1 = vec3(0.0, 0.9, 1.0);   // cyan
           vec3 c2 = vec3(0.5, 0.2, 0.9);   // purple
           vec3 c3 = vec3(0.95, 0.3, 0.6);  // pink
-          // Rotate colors
           vec3 ca = mix(c1, c2, 0.5 + 0.5 * sin(hueShift));
           vec3 cb = mix(c2, c3, 0.5 + 0.5 * cos(hueShift * 1.3));
 
           vec3 col = vec3(0.0);
-          col += ca * glow * 0.08;
-          col += cb * glow * 0.04;
-          col += c3 * glow * glow * 0.005;
+          col += ca * glow * 0.06;
+          col += cb * glow * 0.03;
+          col += c3 * glow * glow * 0.003;
 
-          // Never fully disappear — min brightness 40%
-          float fade = 0.4 + 0.6 * (0.5 + 0.5 * cos(uScroll * 1.5 + 1.0));
+          // Clamp final color to prevent blowout
+          col = min(col, vec3(0.8));
+
+          // Always visible — constant 70% base
+          float fade = 0.7;
           gl_FragColor = vec4(col * fade, length(col) * fade);
         }
       `
